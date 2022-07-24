@@ -6,11 +6,17 @@ import boardgame.Position;
 import chess.pieces.King;
 import chess.pieces.Rook;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ChessMatch {
 
     private int turn;
     private Color currentPlayer;
     private Board board;
+
+    private List<Piece> piecesOnTheBoard = new ArrayList<>();
+    private List<Piece> capturedPieces = new ArrayList<>();
 
     public ChessMatch(){
         board = new Board(8, 8);
@@ -83,14 +89,22 @@ public class ChessMatch {
     //tambem no final retornando a peça capturada
     private Piece makeMove(Position source, Position target){
         Piece p = board.removePiece(source);
-        Piece capturedPiece = board.removePiece(target);
-        board.placePiece(p, target);
+        Piece capturedPiece = board.removePiece(target); //retiro do tabuleiro possivel peça capturada
+        board.placePiece(p, target); //aqui coloco a peça na posicao final saiu da posicao de origem
+
+        if(capturedPiece != null){ //caso tenha peça capturada
+            piecesOnTheBoard.remove(capturedPiece); //remove a peça capturada do tabuleiro da list de peças ativas
+            capturedPieces.add(capturedPiece); //assim add no list de peças capturadas
+        }
+
         return capturedPiece;
     }
 
+    //colocamos as peças no tabuleiro
     //aqui colocamos as peças mas com as coordenadas do xadrez e nao da matriz como anteriormente
     private void placeNewPiece(char column, int row, ChessPiece piece){
         board.placePiece(piece, new ChessPosition(column, row).toPosition());
+        piecesOnTheBoard.add(piece);//tbm colocamos na list de peças no tabuleiro para controle das peças q estao ativas
     }
 
     //Esse metodo vai ser responsavel por iniciar a partida de xadrez colocando as peças no tabuleiro

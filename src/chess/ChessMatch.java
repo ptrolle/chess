@@ -8,12 +8,14 @@ import chess.pieces.Rook;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ChessMatch {
 
     private int turn;
     private Color currentPlayer;
     private Board board;
+    private boolean check; //para verificar se player esta em check
 
     private List<Piece> piecesOnTheBoard = new ArrayList<>();
     private List<Piece> capturedPieces = new ArrayList<>();
@@ -31,6 +33,10 @@ public class ChessMatch {
 
     public Color getCurrentPlayer(){
        return currentPlayer;
+    }
+
+    public boolean getCheck(){
+        return check;
     }
 
     public ChessPiece[][] getPieces(){
@@ -58,6 +64,15 @@ public class ChessMatch {
         validateSourcePosition(source); //para validar pos de origem
         validateTargetPosition(source, target);
         Piece capturePiece = makeMove(source, target);
+
+        //testo se movimento colocou o jogador em cheque
+        if(testCheck(currentPlayer)){
+            undoMove(source, target, capturePiece);
+            throw new ChessException("You cant put yourself in check");
+        }
+
+        check = (testCheck(opponent(currentPlayer))) ? true : false;
+
         nextTurn();
         return (ChessPiece) capturePiece;
     }
@@ -85,6 +100,35 @@ public class ChessMatch {
         currentPlayer = (currentPlayer == Color.WHITE) ? Color.BLACK : Color.WHITE;
     }
 
+    private Color opponent(Color color){
+        return (color == Color.WHITE) ? Color.BLACK : Color.WHITE;
+    }
+
+    private  ChessPiece king(Color color){
+        //filtro a list de peças no tabuleiro para encontrar o rei (king)
+        List<Piece> list = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == color).collect(Collectors.toList());
+        for(Piece p : list){
+            if(p instanceof King){
+                return (ChessPiece) p;
+            }
+        }
+        throw new IllegalStateException("There is no " + color + " king on the board"); //se acontecer de nao encontrar o king temos um problema serio no sistema
+    }
+
+    private boolean testCheck(Color color){
+        Position kingPosition = king(color).getChessPosition().toPosition();
+        List<Piece> opponentPieces = piecesOnTheBoard.stream().filter(x -> ((ChessPiece)x).getColor() == opponent(color)).collect(Collectors.toList());
+
+        //testo se alguma peça oponente do king de tal cor pode colocar ele em check
+        for(Piece p : opponentPieces){
+            boolean[][] mat = p.possibleMoves();
+            if(mat[kingPosition.getRow()][kingPosition.getColumn()]){
+                return true;
+            }
+        }
+        return false;
+    }
+
     //funcao serve para remover a peça na posicao de origem e possivelmente posso remover a peça de target capturando-a
     //tambem no final retornando a peça capturada
     private Piece makeMove(Position source, Position target){
@@ -98,6 +142,17 @@ public class ChessMatch {
         }
 
         return capturedPiece;
+    }
+
+    private void undoMove(Position source, Position target, Piece capturedPiece){
+        Piece p = board.removePiece(target); //tiro a peça do posicao que foi final
+        board.placePiece(p, source); //e recoloco no tabuleiro
+
+        if(capturedPiece != null){ //para desfazer a jogada que colocou player em check, tirando uma possivel peça que poderia ter sido capturada
+            board.placePiece(capturedPiece, target);
+            capturedPieces.remove(capturedPiece);
+            piecesOnTheBoard.add(capturedPiece);
+        }
     }
 
     //colocamos as peças no tabuleiro

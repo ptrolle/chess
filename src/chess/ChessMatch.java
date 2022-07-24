@@ -170,7 +170,8 @@ public class ChessMatch {
     //funcao serve para remover a peça na posicao de origem e possivelmente posso remover a peça de target capturando-a
     //tambem no final retornando a peça capturada
     private Piece makeMove(Position source, Position target){
-        Piece p = board.removePiece(source);
+        ChessPiece p = (ChessPiece) board.removePiece(source);
+        p.increaseMoveCount();
         Piece capturedPiece = board.removePiece(target); //retiro do tabuleiro possivel peça capturada
         board.placePiece(p, target); //aqui coloco a peça na posicao final saiu da posicao de origem
 
@@ -183,7 +184,8 @@ public class ChessMatch {
     }
 
     private void undoMove(Position source, Position target, Piece capturedPiece){
-        Piece p = board.removePiece(target); //tiro a peça do posicao que foi final
+        ChessPiece p = (ChessPiece) board.removePiece(target); //tiro a peça do posicao que foi final
+        p.decreaseMoveCount();
         board.placePiece(p, source); //e recoloco no tabuleiro
 
         if(capturedPiece != null){ //para desfazer a jogada que colocou player em check, tirando uma possivel peça que poderia ter sido capturada
